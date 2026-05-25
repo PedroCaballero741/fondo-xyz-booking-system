@@ -1,0 +1,154 @@
+\documentclass[12pt, letterpaper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[left=3cm, right=2.5cm, top=3cm, bottom=3cm]{geometry}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titling}
+\usepackage{abstract}
+\usepackage{titlesec}
+
+\definecolor{fodunred}{HTML}{A8202F}
+\definecolor{codegray}{HTML}{F5F5F5}
+\definecolor{comedark}{HTML}{333333}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=fodunred,
+    urlcolor=fodunred,
+    citecolor=fodunred
+}
+
+\lstset{
+    backgroundcolor=\color{codegray},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{gray!40},
+    numbers=none,
+    xleftmargin=1em,
+    xrightmargin=1em,
+    aboveskip=0.8em,
+    belowskip=0.8em
+}
+
+\titleformat{\section}
+  {\normalfont\normalsize\bfseries\color{fodunred}}
+  {}
+  {0em}
+  {}
+  [\vspace{-0.5em}\textcolor{fodunred!30}{\rule{\linewidth}{0.6pt}}\vspace{0.1em}]
+\titlespacing{\section}{0pt}{1.6em}{0.6em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textcolor{fodunred}{\small Sistema de Reservas --- Fondo XYZ}}
+\lhead{\small Documento Técnico}
+\rfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setlength{\droptitle}{-2em}
+
+\title{%
+  \textbf{\textcolor{fodunred}{Sistema de Reservas en Línea}}\\[0.4em]
+  \large Documento Técnico\\[0.2em]
+  \normalsize Fondo XYZ --- Prueba Técnica Analista Desarrollador .NET
+}
+\author{Pedro Antonio Caballero Madera}
+\date{Mayo 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+
+\begin{abstract}
+\noindent
+Este documento describe las decisiones de diseño, la arquitectura implementada y las consideraciones de escalabilidad del sistema de reservas web desarrollado para el Fondo XYZ. El sistema permite a los asociados consultar disponibilidad, calcular tarifas y registrar reservas sobre los alojamientos recreativos del fondo, tanto sedes como apartamentos, a través de una aplicación web construida con ASP.NET Core 10 MVC, Entity Framework Core 10 y SQL Server 2022.
+\end{abstract}
+
+\vspace{1em}
+\hrule
+\vspace{2em}
+
+\onehalfspacing
+
+\section{Motivación y enfoque}
+
+El Fondo XYZ administra un conjunto heterogéneo de propiedades recreativas: seis sedes recreativas con lógicas de capacidad y bloqueo propias, dos complejos de apartamentos con esquemas tarifarios independientes, y un calendario que combina festivos colombianos (Ley 51 de 1983), recesos escolares del MEN y la temporada alta de El Rodadero. Este escenario no es trivial desde el punto de vista de modelado. Sistemas similares ---como los motores de reservas de cadenas hoteleras pequeñas o los portales de casas rurales--- suelen colapsar ante esta complejidad porque intentan resolverla en la capa de aplicación, llenando los controladores de condicionales anidados difíciles de mantener y prácticamente imposibles de auditar. La decisión central de este proyecto fue invertir esa pirámide: que la base de datos concentre la mayor parte de la lógica de negocio mediante procedimientos almacenados y funciones escalares, y que la aplicación sea un coordinador delgado que confía en esos procedimientos.
+
+\section{Modelo de datos}
+
+El modelo relacional parte de una entidad \texttt{Sede} que distingue entre \texttt{sede\_recreativa} y \texttt{apartamento}, determinando qué árbol tarifario aplica. Dentro del tipo \texttt{apartamento} conviven dos lógicas completamente distintas: \textbf{El Rodadero}, que cobra por capacidad del apartamento y tiene alta/baja temporada propia según el calendario vacacional de Santa Marta; y \textbf{Suramericana}, que no tiene temporada y cobra una tarifa fija según si viajan una o dos personas. Esta diferenciación se resuelve en los procedimientos almacenados discriminando por \texttt{s.Nombre} una vez que \texttt{s.TipoSede = 'apartamento'}, sin necesidad de una jerarquía de herencia en el esquema que complicaría los joins.
+
+Cada \texttt{Alojamiento} pertenece a una sede y tiene atributos de capacidad, número de habitaciones, bloque y tipo de cabaña. Esta separación permite que la regla del \emph{Bloque Nuevo} de El Placer y Manguruma ---donde la tarifa se cobra siempre como si fuera de dos habitaciones independientemente del número real--- quede capturada en el campo \texttt{Bloque} (\texttt{'bloque\_nuevo'} o \texttt{'cabanas'}). Los procedimientos almacenados derivan de ahí el valor \texttt{@HabEfectivas = 2} sin necesidad de lógica adicional en los controladores.
+
+El modelo de \texttt{Tarifa} es intencionalmente plano: almacena combinaciones de tipo de sede, temporada, número de habitaciones o capacidad máxima, y su precio por noche. Esto simplifica el join en los procedimientos de cálculo y evita jerarquías de herencia que complican las consultas sin aportar ganancia real en este dominio.
+
+\section{Calendario y temporadas}
+
+La pieza más delicada del diseño fue la tabla \texttt{FestivoNacional} y el esquema de temporadas. Los festivos colombianos siguen la Ley 51 de 1983, que traslada varios festivos al lunes siguiente cuando no caen en ese día, lo que hace inviable calcularlos algorítmicamente con una fórmula simple. Se optó por poblar una tabla de fechas explícitas para los años 2025 y 2026 (con fuente en el repositorio \texttt{rmunate/ColombianHolidays}), lo cual es más verboso que un generador algorítmico pero garantiza exactitud ante cualquier excepción legislativa. La misma lógica aplica a la tabla \texttt{TemporadaAlta}, que registra los recesos escolares del MEN, Semana Santa y la temporada alta de El Rodadero según los calendarios oficiales de la SED Bogotá y Cotelco Magdalena.
+
+Dos funciones escalares encapsulan la lógica de consulta de estas tablas. \texttt{fn\_EsTarifaEspecial(fecha, sedeId)} retorna \texttt{1} cuando la fecha es festivo, fin de semana o período de temporada escolar alta, y aplica exclusivamente a las sedes recreativas. \texttt{fn\_EsAltaTemporadaRodadero(fecha)} consulta los rangos de temporada vacacional de Santa Marta y aplica solo a El Rodadero. Centralizar esta lógica en funciones evita duplicarla en cada procedimiento almacenado: un cambio en el calendario ---agregar un festivo por decreto, corregir una fecha--- se propaga automáticamente a los cinco SPs sin modificar ninguno de ellos. Sistemas de reservas existentes en el ecosistema colombiano frecuentemente no manejan esta distinción y terminan aplicando tarifa normal en días que deberían ser especiales, o viceversa, generando reclamos. Al tener estas tablas de calendario explícitas, una auditoría de tarifas es trivial: se consulta qué temporada estaba activa en una fecha dada y el resultado es completamente trazable.
+
+\section{Procedimientos almacenados}
+
+Los cinco procedimientos almacenados cubren el ciclo completo de una reserva.
+
+\textbf{sp\_BuscarDisponibilidad} utiliza una subconsulta \texttt{NOT EXISTS} para detectar solapamiento de rangos. Es la forma más eficiente frente a alternativas como generar una secuencia de fechas y hacer \texttt{LEFT JOIN}: el planificador puede usar el índice sobre \texttt{FechaInicio}/\texttt{FechaFin} directamente, mientras que la expansión de fechas fuerza un scan de todas las noches del rango. \textbf{sp\_BuscarDisponibilidadPersonas} extiende esta lógica agregando el filtro de \texttt{CapacidadMaxima} para personas.
+
+\textbf{sp\_ConsultarTarifas} recibe un alojamiento, una fecha de referencia y el número de personas, y devuelve la tarifa aplicable (precio base más cargo por personas adicionales) determinando primero la temporada mediante las funciones escalares anteriores.
+
+\textbf{sp\_CalcularCostoReserva} es el procedimiento más complejo: genera la secuencia de noches usando una CTE no recursiva basada en \texttt{ROW\_NUMBER() OVER (ORDER BY (SELECT NULL))} sobre un \texttt{CROSS JOIN} de \texttt{sys.all\_objects}, lo que produce un generador de enteros eficiente sin cursores ni tablas temporales adicionales. Por cada noche evalúa la tarifa correspondiente ---diferenciando las tres lógicas de sede recreativa, El Rodadero y Suramericana--- e inserta los resultados en una variable de tabla \texttt{@Detalle}. Un \texttt{UPDATE} posterior calcula el total de cada noche como \texttt{PrecioBase + CostoAdicional}. Este enfoque era necesario porque una reserva puede cruzar distintas temporadas: por ejemplo, entrar un jueves en semana normal y salir el domingo, con dos noches a tarifa especial y dos a tarifa normal.
+
+Un problema técnico que surgió durante el desarrollo merece mención porque ilustra una limitación de SQL Server: dentro de un \texttt{SUM(CASE WHEN \ldots\ THEN \ldots\ END)}, el motor no permite que la cláusula \texttt{THEN} contenga una subconsulta escalar, produciendo el Mensaje 130 (\emph{``Cannot perform an aggregate function on an expression containing an aggregate or a subquery''}). La solución en \textbf{sp\_CrearReserva} fue materializar el costo base y el costo adicional de cada noche como columnas simples en una CTE previa (\texttt{NocheCostos}), sobre las cuales el \texttt{SUM} posterior opera sin restricciones. Esta técnica es la recomendada por Microsoft para procedimientos de cálculo complejos, y resulta además más legible que anidar subconsultas dentro de agregados.
+
+\textbf{sp\_CrearReserva} envuelve la inserción en una transacción explícita y verifica disponibilidad con las sugerencias de bloqueo \texttt{WITH (UPDLOCK, HOLDLOCK)} justo antes de confirmar. \texttt{UPDLOCK} convierte el bloqueo compartido de la lectura en uno de actualización, impidiendo que una segunda transacción concurrente adquiera un bloqueo compatible sobre las mismas filas. \texttt{HOLDLOCK} eleva el aislamiento a serializable para ese conjunto de filas, evitando inserciones fantasma entre la verificación y el \texttt{INSERT}. De esta forma se eliminan las condiciones de carrera sin sacrificar concurrencia en reservas sobre alojamientos distintos.
+
+\section{Arquitectura de la aplicación}
+
+La arquitectura .NET sigue el patrón de capas que la prueba solicitaba: dominio, datos, negocio y presentación. La capa de dominio define las entidades, los DTOs de resultado y las interfaces de repositorio, de modo que la capa de datos puede ser reemplazada ---por ejemplo, cambiando SQL Server por PostgreSQL--- sin tocar los controladores. La capa de datos implementa esos repositorios usando Entity Framework Core para las operaciones CRUD estándar e invoca los procedimientos almacenados mediante \texttt{FromSqlRaw}, que es la forma correcta de consumir resultados tabulares desde un SP en EF Core.
+
+Una limitación relevante de EF Core es que solo captura el \emph{primer} conjunto de resultados de un procedimiento multi-resultado. \texttt{sp\_CalcularCostoReserva} devuelve el detalle noche por noche y luego un resumen agregado; el repositorio captura el detalle (primer \texttt{SELECT}) y recalcula el resumen en memoria con LINQ (\texttt{detalle.Sum(\ldots)}), lo cual es más predecible y fácil de depurar que depender de un segundo result set.
+
+El proveedor de correo se selecciona en tiempo de arranque leyendo la clave \texttt{EmailSettings:Provider} en \texttt{appsettings.json}: el valor \texttt{"Console"} registra \texttt{ConsoleEmailService} (imprime en stdout durante desarrollo) y cualquier otro valor registra \texttt{EmailService}, implementado sobre MailKit. El cambio entre entornos no requiere modificar código; basta con ajustar la configuración y la inyección de dependencias toma el relevo automáticamente.
+
+\section{Autenticación e identidad}
+
+La autenticación se implementó con ASP.NET Core Identity extendiendo \texttt{IdentityUser} con los campos de perfil específicos del fondo: número de documento, fecha de nacimiento, datos de contacto, preguntas secretas y autorizaciones de comunicación. Se usó el número de documento como \texttt{UserName} en lugar del correo electrónico, porque los asociados se identifican naturalmente por su cédula y no todos disponen de correo institucional.
+
+La contraseña se redujo a un PIN numérico de cuatro dígitos, lo que requirió ajustar en \texttt{Program.cs} los requisitos de complejidad de Identity (\texttt{RequireNonAlphanumeric = false}, \texttt{RequireUppercase = false}, \texttt{RequireLowercase = false}, longitud mínima 4). Esto se complementa con un teclado virtual en JavaScript (\texttt{keypad.js}) que baraja aleatoriamente los dígitos en cada render, dificultando ataques de grabación de pantalla o \emph{shoulder surfing}.
+
+La coexistencia entre el esquema SQL creado manualmente y las migraciones de EF requirió una solución pragmática: las tablas de negocio ya existían antes de que EF intentara crearlas, y ejecutar \texttt{database update} producía errores de objeto duplicado. En lugar de eliminar y recrear las tablas ---lo que habría borrado los datos de prueba--- se crearon las tablas de Identity mediante un script SQL y se insertó el registro de migración directamente en \texttt{\_\_EFMigrationsHistory}, indicándole a EF que ya había sido aplicada. Esta técnica es perfectamente válida y está documentada en la guía de migraciones de Microsoft para escenarios donde el esquema pre-existe.
+
+\section{Valor entregado y trabajo pendiente}
+
+El fondo operaba con un proceso manual de reservas sin visibilidad de disponibilidad en tiempo real. Este sistema centraliza la disponibilidad en una base de datos que es la única fuente de verdad, elimina el riesgo de doble reserva mediante la verificación transaccional con bloqueo pesimista, y expone la lógica tarifaria compleja de forma auditable y modificable sin tocar código de aplicación.
+
+Varias áreas evolucionarían antes de una puesta en producción real. La subida de comprobantes de pago existe como funcionalidad, pero en producción convendría enviar esos archivos a Azure Blob Storage o S3 en lugar del sistema de archivos local, porque un servidor que escale horizontalmente no puede asumir que el archivo subido en una instancia estará disponible en otra. El esquema de festivos y temporadas requiere mantenimiento anual: habría que agregar los registros para 2027 antes de que termine 2026. Esto podría automatizarse con un script basado en la API de festivos del Ministerio del Interior, o simplemente documentarse como tarea de mantenimiento recurrente.
+
+\section{Escalabilidad}
+
+La arquitectura en capas facilita introducir caché a nivel de repositorio para consultas frecuentes como la lista de sedes o las tarifas, que cambian raramente. Los procedimientos almacenados son compatibles con réplicas de solo lectura de SQL Server si la carga de consultas de disponibilidad crece, sin modificar nada en la aplicación. Si el fondo eventualmente quisiera exponer sus datos a una aplicación móvil, bastaría agregar una capa de API REST sobre los mismos repositorios, porque la lógica de negocio ya está encapsulada en los SPs y no duplicada en los controladores.
+
+La mayor limitación de escalabilidad en el diseño actual es que los SPs recalculan disponibilidad con una consulta completa por cada petición; si el volumen de reservas crece significativamente, sería conveniente introducir una tabla de \emph{slots} precalculados actualizada por triggers, reduciendo las consultas de disponibilidad de scans a lookups.
+
+\vspace{2em}
+\hrule
+\vspace{1em}
+
+\noindent\textbf{Repositorio:} \href{https://github.com/PedroCaballero741/fondo-xyz-booking-system}{github.com/PedroCaballero741/fondo-xyz-booking-system}
+
+\noindent\textbf{Stack:} SQL Server 2022 · ASP.NET Core 10 MVC · Entity Framework Core 10 · ASP.NET Core Identity · MailKit 4.x · Bootstrap 5
+
+\noindent\textbf{Scripts de base de datos:} \texttt{database/01\_CREATE\_TABLES.sql} · \texttt{02\_SEED\_DATA.sql} · \texttt{03\_STORED\_PROCEDURES.sql}
+
+\end{document}
