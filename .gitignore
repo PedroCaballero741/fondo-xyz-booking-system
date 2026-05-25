@@ -49,3 +49,7 @@ logs/
 
 ## comprobantes de pago subidos por usuarios
 src/FondoXYZ.Web/wwwroot/uploads/
+
+## librerias de frontend (se restauran con dotnet restore / libman)
+src/FondoXYZ.Web/wwwroot/lib/
+.draft/
