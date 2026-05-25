@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="FondoXYZ.Business/FondoXYZ.Business.csproj" />
+  <Project Path="FondoXYZ.Data/FondoXYZ.Data.csproj" />
+  <Project Path="FondoXYZ.Domain/FondoXYZ.Domain.csproj" />
+  <Project Path="FondoXYZ.Web/FondoXYZ.Web.csproj" />
+</Solution>

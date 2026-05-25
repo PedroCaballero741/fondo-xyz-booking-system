@@ -1,0 +1,214 @@
+@model FondoXYZ.Web.ViewModels.ActualizarViewModel
+@{
+    ViewData["Title"] = "Actualizar Datos";
+    ViewData["ActiveTab"] = "actualizar";
+}
+<div class="page">
+    <h2 class="page-title">Actualizar Datos de Usuario</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background:#E8F5E9; border:1px solid #A5D6A7; color:#2E7D32; padding:12px; border-radius:4px; margin-bottom:16px; font-size:13px;">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div style="color:#A8202F; margin-bottom:16px; font-size:13px; background:#FFF0F0; padding:12px; border:1px solid #ffcccc; border-radius:4px;">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <div>@error.ErrorMessage</div>
+            }
+        </div>
+    }
+
+    <form asp-action="Actualizar" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="section" style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+            <div>
+                <h3 style="font-size:13px; font-weight:700; color:#A8202F; margin-bottom:16px; text-transform:uppercase;">Datos Personales</h3>
+
+                <div style="margin-bottom:12px;">
+                    <label class="label">Nombre Completo *</label>
+                    <input asp-for="NombreCompleto" class="input" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="label">Fecha de Nacimiento</label>
+                    <input asp-for="FechaNacimiento" class="input" type="date" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="label">Celular *</label>
+                    <input asp-for="Celular" class="input" type="tel" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="label">Correo Electr&#243;nico *</label>
+                    <input asp-for="Email" class="input" type="email" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="label">Tel&#233;fono de Residencia</label>
+                    <input asp-for="TelefonoResidencia" class="input" type="tel" />
+                </div>
+
+                <h3 style="font-size:13px; font-weight:700; color:#A8202F; margin:20px 0 16px; text-transform:uppercase;">Pregunta Secreta</h3>
+                <div style="margin-bottom:12px;">
+                    <label class="label">Pregunta Secreta</label>
+                    <select asp-for="PreguntaSecreta" class="input">
+                        <option value="">-- Seleccione --</option>
+                        <option>&#191;Cu&#225;l es el nombre de su primera mascota?</option>
+                        <option>&#191;Cu&#225;l es el nombre de su colegio?</option>
+                        <option>&#191;Cu&#225;l es su ciudad de nacimiento?</option>
+                        <option>&#191;Cu&#225;l es el apellido de soltera de su madre?</option>
+                        <option>&#191;Cu&#225;l es su comida favorita?</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="label">Respuesta</label>
+                    <input asp-for="RespuestaSecreta" class="input" />
+                </div>
+
+                <h3 style="font-size:13px; font-weight:700; color:#A8202F; margin:20px 0 12px; text-transform:uppercase;">Autorizaciones</h3>
+                <div style="margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+                    <input asp-for="AutorizaEnvioCorreo" type="checkbox" style="width:16px; height:16px;" />
+                    <label asp-for="AutorizaEnvioCorreo" style="font-size:13px;">Autorizo el env&#237;o de informaci&#243;n por correo</label>
+                </div>
+                <div style="margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+                    <input asp-for="AutorizaEnvioCelular" type="checkbox" style="width:16px; height:16px;" />
+                    <label asp-for="AutorizaEnvioCelular" style="font-size:13px;">Autorizo el env&#237;o de informaci&#243;n por celular</label>
+                </div>
+            </div>
+
+            <div>
+                <h3 style="font-size:13px; font-weight:700; color:#A8202F; margin-bottom:16px; text-transform:uppercase;">Direcci&#243;n de Residencia</h3>
+
+                <div style="margin-bottom:12px;">
+                    <label class="label">Departamento</label>
+                    <input asp-for="Departamento" class="input" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="label">Municipio</label>
+                    <input asp-for="Municipio" class="input" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="label">Barrio</label>
+                    <input asp-for="Barrio" class="input" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="label">Direcci&#243;n</label>
+                    <input asp-for="DireccionResidencia" class="input" />
+                </div>
+
+                <h3 style="font-size:13px; font-weight:700; color:#A8202F; margin:20px 0 16px; text-transform:uppercase;">Cambiar Clave (opcional)</h3>
+                <p style="font-size:12px; color:#666; margin-bottom:12px;">Deje en blanco si no desea cambiar su clave.</p>
+
+                <div style="margin-bottom:12px;">
+                    <label class="label">Nueva Clave (4 d&#237;gitos)</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="pin-display" class="input input-sm" readonly placeholder="&#8226;&#8226;&#8226;&#8226;"
+                               style="letter-spacing:4px; max-width:80px;" />
+                        <input type="hidden" asp-for="NuevaClave" id="NuevaClave" />
+                    </div>
+                    <div id="keypad" class="keypad" style="margin-top:10px;"></div>
+                    <div style="margin-top:8px;">
+                        <button type="button" id="keypad-shuffle" class="btn btn-secondary btn-sm">Reorganizar</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:12px;">
+                    <label class="label">Confirmar Nueva Clave</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="pin-confirm-display" class="input input-sm" readonly placeholder="&#8226;&#8226;&#8226;&#8226;"
+                               style="letter-spacing:4px; max-width:80px;" />
+                        <input type="hidden" asp-for="ConfirmarNuevaClave" id="ConfirmarNuevaClave" />
+                    </div>
+                    <div id="keypad-confirm" class="keypad" style="margin-top:10px;"></div>
+                    <div style="margin-top:8px;">
+                        <button type="button" id="keypad-confirm-shuffle" class="btn btn-secondary btn-sm">Reorganizar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:16px; padding-top:16px; border-top:1px solid #E0E0E0;">
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a asp-controller="Sedes" asp-action="Index" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+    (function() {
+        var pin = "";
+        var pinConfirm = "";
+
+        function shuffle(arr) {
+            for (var i = arr.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+            }
+            return arr;
+        }
+
+        function renderKp(containerId, appendFn, clearFn) {
+            var kp = document.getElementById(containerId);
+            if (!kp) return;
+            var digits = shuffle([0,1,2,3,4,5,6,7,8,9]);
+            kp.innerHTML = "";
+            digits.forEach(function(d) {
+                var btn = document.createElement("button");
+                btn.type = "button"; btn.textContent = d;
+                btn.onclick = function() { appendFn(d); };
+                kp.appendChild(btn);
+            });
+            var cl = document.createElement("button");
+            cl.type = "button"; cl.textContent = "Limpiar"; cl.className = "keypad-clear";
+            cl.onclick = clearFn;
+            kp.appendChild(cl);
+        }
+
+        function updatePin() {
+            var d = document.getElementById("pin-display");
+            var h = document.getElementById("NuevaClave");
+            if (d) d.value = "\u25CF".repeat(pin.length);
+            if (h) h.value = pin;
+        }
+
+        function updateConfirm() {
+            var d = document.getElementById("pin-confirm-display");
+            var h = document.getElementById("ConfirmarNuevaClave");
+            if (d) d.value = "\u25CF".repeat(pinConfirm.length);
+            if (h) h.value = pinConfirm;
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            renderKp("keypad",
+                function(d) { if (pin.length < 4) { pin += d; updatePin(); } },
+                function() { pin = ""; updatePin(); }
+            );
+            renderKp("keypad-confirm",
+                function(d) { if (pinConfirm.length < 4) { pinConfirm += d; updateConfirm(); } },
+                function() { pinConfirm = ""; updateConfirm(); }
+            );
+
+            var s1 = document.getElementById("keypad-shuffle");
+            if (s1) s1.onclick = function() {
+                pin = ""; updatePin();
+                renderKp("keypad",
+                    function(d) { if (pin.length < 4) { pin += d; updatePin(); } },
+                    function() { pin = ""; updatePin(); }
+                );
+            };
+            var s2 = document.getElementById("keypad-confirm-shuffle");
+            if (s2) s2.onclick = function() {
+                pinConfirm = ""; updateConfirm();
+                renderKp("keypad-confirm",
+                    function(d) { if (pinConfirm.length < 4) { pinConfirm += d; updateConfirm(); } },
+                    function() { pinConfirm = ""; updateConfirm(); }
+                );
+            };
+        });
+    })();
+    </script>
+}

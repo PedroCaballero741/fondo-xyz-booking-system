@@ -1,0 +1,90 @@
+@using FondoXYZ.Domain.Entities
+@model IEnumerable<Reserva>
+@{
+    ViewData["Title"] = "Mis Reservas";
+    ViewData["ActiveTab"] = "reservas";
+}
+<div class="page">
+    <h2 class="page-title">Mis Reservas</h2>
+
+    @if (TempData["Success"] is string ok)
+    {
+        <div style="background:#E8F5E9; border:1px solid #A5D6A7; color:#2E7D32; padding:12px; border-radius:4px; margin-bottom:16px; font-size:13px;">
+            @ok
+        </div>
+    }
+    @if (TempData["Error"] is string err)
+    {
+        <div style="background:#FFF0F0; border:1px solid #ffcccc; color:#A8202F; padding:12px; border-radius:4px; margin-bottom:16px; font-size:13px;">
+            @err
+        </div>
+    }
+
+    <div style="margin-bottom:16px;">
+        <a asp-controller="Sedes" asp-action="Index" class="btn btn-primary">Nueva Reserva</a>
+    </div>
+
+    <div class="section">
+        @if (!Model.Any())
+        {
+            <div style="padding:32px; text-align:center; color:#666;">
+                <p>No tiene reservas registradas a&#250;n.</p>
+                <a asp-controller="Sedes" asp-action="Index" class="btn btn-primary" style="margin-top:12px;">Ver Sedes Disponibles</a>
+            </div>
+        }
+        else
+        {
+            <div class="list-header" style="grid-template-columns:60px 1fr 1fr 110px 110px 70px 100px 90px 100px;">
+                <div>#</div>
+                <div>Alojamiento</div>
+                <div>Sede</div>
+                <div>Llegada</div>
+                <div>Salida</div>
+                <div>Pers.</div>
+                <div>Total</div>
+                <div>Estado</div>
+                <div>Acci&#243;n</div>
+            </div>
+            @foreach (var r in Model)
+            {
+                <div class="sede-row" style="grid-template-columns:60px 1fr 1fr 110px 110px 70px 100px 90px 100px;">
+                    <div>@r.Id</div>
+                    <div class="name">@r.Alojamiento.Nombre</div>
+                    <div>@r.Alojamiento.Sede.NombreOficial</div>
+                    <div>@r.FechaInicio.ToString("dd/MM/yyyy")</div>
+                    <div>@r.FechaFin.ToString("dd/MM/yyyy")</div>
+                    <div>@r.NumPersonas</div>
+                    <div>$@r.CostoTotal.ToString("N0")</div>
+                    <div>
+                        <span style="font-size:11px; font-weight:700; padding:3px 8px; border-radius:10px; background:@(r.Estado == "confirmada" ? "#E8F5E9" : r.Estado == "cancelada" ? "#F5F5F5" : "#FFF8E1"); color:@(r.Estado == "confirmada" ? "#2E7D32" : r.Estado == "cancelada" ? "#757575" : "#F57F17");">
+                            @r.Estado.ToUpper()
+                        </span>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        @if (r.Estado != "cancelada" && r.FechaInicio > DateOnly.FromDateTime(DateTime.Today))
+                        {
+                            <form asp-action="Cancelar" method="post" style="display:inline;"
+                                  onsubmit="return confirm('&#191;Cancelar reserva #@r.Id?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@r.Id" />
+                                <button type="submit" class="btn btn-secondary btn-sm">Cancelar</button>
+                            </form>
+                        }
+                        @if (r.Estado == "pendiente")
+                        {
+                            <form asp-action="SubirComprobante" asp-route-id="@r.Id"
+                                  method="post" enctype="multipart/form-data" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <label style="cursor:pointer; font-size:11px; color:#A8202F; font-weight:600;">
+                                    Comprobante
+                                    <input type="file" name="archivo" accept=".pdf,.jpg,.png" style="display:none;"
+                                           onchange="this.form.submit()" />
+                                </label>
+                            </form>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

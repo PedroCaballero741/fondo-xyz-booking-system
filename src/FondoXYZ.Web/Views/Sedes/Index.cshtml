@@ -1,0 +1,48 @@
+@model IEnumerable<FondoXYZ.Domain.Entities.Sede>
+@{
+    ViewData["Title"] = "Sedes";
+}
+<div class="page">
+    <h2 class="page-title">Sedes Recreativas y Apartamentos</h2>
+    <div class="subtabs">
+        <div class="subtab active">Sedes Recreativas y Apartamentos</div>
+        <div class="subtab">Seleccione sus Fechas</div>
+    </div>
+    <div class="section">
+        <div class="list-header">
+            <div>&nbsp;</div>
+            <div>Nombre</div>
+            <div>Descripci&#243;n</div>
+            <div>Tipo</div>
+            <div>Ubicaci&#243;n</div>
+            <div>Seleccionar</div>
+        </div>
+        @if (!Model.Any())
+        {
+            <div style="padding:24px; text-align:center; color:#666;">
+                No hay sedes disponibles en este momento.
+            </div>
+        }
+        @foreach (var sede in Model)
+        {
+            <div class="sede-row">
+                <div class="sede-thumb" style="background-image: url('/img/sedes/@(sede.Id).jpg'); background-color: #CFCFCF;"></div>
+                <div class="name">@sede.NombreOficial</div>
+                <div class="desc">@sede.Ciudad</div>
+                <div class="tipo">@(sede.TipoSede == "apartamento" ? "Apartamento" : "Sede Recreativa")</div>
+                <div class="loc">@sede.Ciudad</div>
+                <div class="pick">
+                    @if (User.Identity!.IsAuthenticated)
+                    {
+                        <a class="btn btn-primary" asp-controller="Sedes" asp-action="Detalle" asp-route-id="@sede.Id">Seleccionar</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-primary" asp-controller="Account" asp-action="Login"
+                           asp-route-returnUrl="@Url.Action("Detalle","Sedes",new{id=sede.Id})">Seleccionar</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

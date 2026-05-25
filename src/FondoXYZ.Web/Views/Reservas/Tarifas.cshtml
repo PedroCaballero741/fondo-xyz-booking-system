@@ -1,0 +1,80 @@
+@model FondoXYZ.Web.Models.TarifasViewModel
+@{ ViewData["Title"] = "Tarifas y costo"; }
+
+<h2>Desglose de costos</h2>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">@Model.NombreAlojamiento</h5>
+    <p class="card-text text-muted">@Model.NombreSede</p>
+    <div class="row">
+      <div class="col-auto"><strong>Llegada:</strong> @Model.FechaInicio.ToString("dd/MM/yyyy")</div>
+      <div class="col-auto"><strong>Salida:</strong> @Model.FechaFin.ToString("dd/MM/yyyy")</div>
+      <div class="col-auto"><strong>Personas:</strong> @Model.NumPersonas</div>
+    </div>
+  </div>
+</div>
+
+@if (Model.Costo is not null)
+{
+  <div class="table-responsive mb-3">
+    <table class="table table-sm table-striped">
+      <thead class="table-secondary">
+        <tr>
+          <th>Fecha</th>
+          <th>Día</th>
+          <th>Temporada</th>
+          <th>Tarifa base</th>
+          <th>Adicionales</th>
+          <th>Total noche</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var d in Model.Costo.Detalle)
+        {
+          <tr>
+            <td>@d.Fecha.ToString("dd/MM/yyyy")</td>
+            <td>@d.DiaSemana</td>
+            <td>
+              <span class="badge @(d.Temporada == "especial" ? "bg-success" : d.Temporada == "alta" ? "bg-danger" : "bg-primary")">
+                @(d.Temporada ?? "-")
+              </span>
+            </td>
+            <td>$@d.PrecioBase.ToString("N0")</td>
+            <td>@(d.PersonasAdicionales > 0 ? "$" + d.PersonasAdicionales.ToString("N0") : "-")</td>
+            <td><strong>$@d.TotalNoche.ToString("N0")</strong></td>
+          </tr>
+        }
+      </tbody>
+      <tfoot class="table-dark">
+        <tr>
+          <td colspan="3"><strong>TOTAL (@Model.Costo.NumNoches noches)</strong></td>
+          <td>$@Model.Costo.TotalBase.ToString("N0")</td>
+          <td>$@Model.Costo.TotalAdicionales.ToString("N0")</td>
+          <td><strong>$@Model.Costo.CostoTotal.ToString("N0")</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  @if (User.Identity?.IsAuthenticated == true)
+  {
+    <a class="btn btn-success"
+       asp-action="Create"
+       asp-route-alojamientoId="@Model.AlojamientoId"
+       asp-route-fechaInicio="@Model.FechaInicio"
+       asp-route-fechaFin="@Model.FechaFin"
+       asp-route-numPersonas="@Model.NumPersonas"
+       asp-route-costoTotal="@Model.Costo.CostoTotal">
+      Reservar ahora
+    </a>
+  }
+  else
+  {
+    <a class="btn btn-success" asp-controller="Account" asp-action="Login">
+      Inicia sesión para reservar
+    </a>
+  }
+}
+
+<a asp-action="Consultar" class="btn btn-secondary ms-2">← Volver</a>

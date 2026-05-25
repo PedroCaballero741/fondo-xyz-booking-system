@@ -1,0 +1,37 @@
+@model FondoXYZ.Web.Models.CrearReservaViewModel
+@{ ViewData["Title"] = "Confirmar reserva"; }
+
+<h2>Confirmar reserva</h2>
+
+<div class="card mb-4" style="max-width:500px">
+  <div class="card-body">
+    <h5 class="card-title">@Model.NombreAlojamiento</h5>
+    <p class="text-muted">@Model.NombreSede</p>
+    <table class="table table-sm mb-0">
+      <tr><td>Llegada</td><td>@Model.FechaInicio.ToString("dd/MM/yyyy")</td></tr>
+      <tr><td>Salida</td><td>@Model.FechaFin.ToString("dd/MM/yyyy")</td></tr>
+      <tr><td>Noches</td><td>@(Model.FechaFin.DayNumber - Model.FechaInicio.DayNumber)</td></tr>
+      <tr><td>Personas</td><td>@Model.NumPersonas</td></tr>
+      <tr class="table-success"><td><strong>Total</strong></td><td><strong>$@Model.CostoTotal.ToString("N0")</strong></td></tr>
+    </table>
+  </div>
+</div>
+
+<form asp-action="Create" method="post" style="max-width:500px">
+  <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+  <input asp-for="AlojamientoId"     type="hidden" />
+  <input asp-for="FechaInicio"       type="hidden" />
+  <input asp-for="FechaFin"          type="hidden" />
+  <input asp-for="NumPersonas"       type="hidden" />
+  <input asp-for="CostoTotal"        type="hidden" />
+  <input asp-for="NombreAlojamiento" type="hidden" />
+  <input asp-for="NombreSede"        type="hidden" />
+
+  <div class="mb-3">
+    <label asp-for="Notas" class="form-label">Notas (opcional)</label>
+    <textarea asp-for="Notas" class="form-control" rows="2"></textarea>
+  </div>
+
+  <button type="submit" class="btn btn-success">Confirmar reserva</button>
+  <a asp-action="Consultar" class="btn btn-secondary ms-2">Cancelar</a>
+</form>

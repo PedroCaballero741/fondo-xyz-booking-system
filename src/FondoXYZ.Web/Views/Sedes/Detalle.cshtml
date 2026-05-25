@@ -1,0 +1,134 @@
+@model FondoXYZ.Web.ViewModels.SedeDetalleViewModel
+@{
+    ViewData["Title"] = Model.Sede.NombreOficial;
+}
+<div class="page">
+    <h2 class="page-title">@Model.Sede.NombreOficial</h2>
+    <div class="subtabs">
+        <a class="subtab" asp-controller="Sedes" asp-action="Index">&#8592; Volver a Sedes</a>
+        <div class="subtab active">Detalle de Sede</div>
+    </div>
+
+    <div class="section" style="display:grid; grid-template-columns:340px 1fr; gap:24px; align-items:start;">
+        <div>
+            <div class="card" style="padding:20px;">
+                <h3 style="margin-bottom:16px; font-size:14px; font-weight:700; color:#A8202F;">SELECCIONE SUS FECHAS</h3>
+                <form asp-action="Detalle" asp-route-id="@Model.Sede.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div style="margin-bottom:12px;">
+                        <label class="label">Fecha de llegada</label>
+                        <input type="date" name="FechaInicio" class="input" value="@Model.FechaInicio.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label class="label">Fecha de salida</label>
+                        <input type="date" name="FechaFin" class="input" value="@Model.FechaFin.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label class="label">N&#250;mero de personas</label>
+                        <input type="number" name="NumPersonas" class="input" value="@Model.NumPersonas" min="1" max="50" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;">Buscar Disponibilidad</button>
+                </form>
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div style="color:#A8202F; font-size:12px; margin-top:10px;">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <div>@error.ErrorMessage</div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="card" style="padding:20px; margin-top:16px;">
+                <h3 style="margin-bottom:12px; font-size:14px; font-weight:700; color:#A8202F;">INFORMACI&#211;N</h3>
+                <p style="font-size:13px; color:#555; line-height:1.5;">
+                    <strong>Ciudad:</strong> @Model.Sede.Ciudad<br/>
+                    <strong>Tipo:</strong> @(Model.Sede.TipoSede == "apartamento" ? "Apartamento" : "Sede Recreativa")<br/>
+                    @if (Model.Sede.CapacidadTotal.HasValue)
+                    {
+                        <text><strong>Capacidad total:</strong> @Model.Sede.CapacidadTotal personas<br/></text>
+                    }
+                    <strong>Alojamientos:</strong> @Model.Alojamientos.Count()
+                </p>
+            </div>
+        </div>
+
+        <div>
+            @if (Model.BuscadoDisponibilidad)
+            {
+                <h3 style="font-size:14px; font-weight:700; margin-bottom:12px; color:#333;">
+                    Disponibilidad del @Model.FechaInicio.ToString("dd/MM/yyyy") al @Model.FechaFin.ToString("dd/MM/yyyy")
+                    para @Model.NumPersonas persona(s)
+                </h3>
+
+                @if (!Model.Disponibles.Any())
+                {
+                    <div class="card" style="padding:20px; color:#666;">
+                        No hay alojamientos disponibles para las fechas y cantidad de personas seleccionadas.
+                    </div>
+                }
+                else
+                {
+                    <div class="list-header" style="grid-template-columns:1fr 80px 80px 100px 120px;">
+                        <div>Alojamiento</div>
+                        <div>Bloque</div>
+                        <div>Hab.</div>
+                        <div>Cap. M&#225;x</div>
+                        <div>Acci&#243;n</div>
+                    </div>
+                    @foreach (var aloj in Model.Disponibles)
+                    {
+                        <div class="sede-row" style="grid-template-columns:1fr 80px 80px 100px 120px;">
+                            <div class="name">@aloj.Alojamiento</div>
+                            <div>@aloj.Bloque</div>
+                            <div>@aloj.NumHabitaciones</div>
+                            <div>@(aloj.CapacidadMaxima?.ToString() ?? "-")</div>
+                            <div class="pick">
+                                <a class="btn btn-primary btn-sm"
+                                   asp-controller="Reservas" asp-action="Tarifas"
+                                   asp-route-alojamientoId="@aloj.AlojamientoId"
+                                   asp-route-fechaInicio="@Model.FechaInicio.ToString("yyyy-MM-dd")"
+                                   asp-route-fechaFin="@Model.FechaFin.ToString("yyyy-MM-dd")"
+                                   asp-route-numPersonas="@Model.NumPersonas">
+                                   Ver Tarifas
+                                </a>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+            else
+            {
+                <h3 style="font-size:14px; font-weight:700; margin-bottom:12px; color:#333;">Alojamientos en esta sede</h3>
+                @foreach (var aloj in Model.Alojamientos)
+                {
+                    <div class="card" style="padding:16px; margin-bottom:12px;">
+                        <div style="font-weight:700; color:#333; margin-bottom:6px;">@aloj.Nombre</div>
+                        <div style="font-size:13px; color:#555;">
+                            Bloque: @aloj.Bloque &bull;
+                            Habitaciones: @aloj.NumHabitaciones
+                            @if (aloj.CapacidadMaxima.HasValue)
+                            {
+                                <text> &bull; Capacidad m&#225;x: @aloj.CapacidadMaxima personas</text>
+                            }
+                        </div>
+                        @if (aloj.Caracteristica != null)
+                        {
+                            <div style="font-size:12px; color:#777; margin-top:6px;">
+                                @if (aloj.Caracteristica.TieneTelevIsor) { <text>TV </text> }
+                                @if (aloj.Caracteristica.TieneNevera) { <text>&#183; Nevera </text> }
+                                @if (aloj.Caracteristica.TieneTerraza) { <text>&#183; Terraza </text> }
+                                @if (aloj.Caracteristica.TieneParqueo) { <text>&#183; Parqueo</text> }
+                            </div>
+                        }
+                    </div>
+                }
+                <div style="padding:16px; background:#FFF8E1; border:1px solid #FFE082; border-radius:4px; font-size:13px; color:#555;">
+                    Seleccione sus fechas y n&#250;mero de personas para ver disponibilidad y tarifas.
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="text-center py-5">
+    <h1 class="display-4 fw-bold">Sistema de Reservas</h1>
+    <p class="lead text-muted">Fondo XYZ — Sedes recreativas y apartamentos en toda Colombia</p>
+    <a asp-controller="Reservas" asp-action="Consultar" class="btn btn-primary btn-lg mt-3">
+        Consultar disponibilidad
+    </a>
+</div>
+
+<div class="row mt-4 g-4 text-center">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">6 Sedes Recreativas</h5>
+                <p class="card-text text-muted">Villeta, El Placer, Gonzalo Morante, Tablones, Manguruma, Federman</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">2 Complejos de Apartamentos</h5>
+                <p class="card-text text-muted">Suramericana (Medellín) · El Rodadero (Santa Marta)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Tarifas dinámicas</h5>
+                <p class="card-text text-muted">Normal, especial (L–J) y alta temporada calculadas automáticamente</p>
+            </div>
+        </div>
+    </div>
+</div>

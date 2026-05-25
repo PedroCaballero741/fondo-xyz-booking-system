@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FODUN - Sistema de Reservas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="app">
+    <header class="header">
+        <div class="brand">
+            <div class="brand-logo">
+                <svg viewBox="0 0 100 100" width="56" height="56">
+                    <path d="M22 22 L78 78 M78 22 L22 78" stroke="#FFF" stroke-width="11" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="brand-name">FODUN</div>
+        </div>
+        <div class="header-banner">
+            <h1>SISTEMA DE RESERVAS</h1>
+            <h2>Sedes Recreativas y Apartamentos</h2>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-tabs">
+            <a asp-controller="Sedes" asp-action="Index"
+               class="nav-tab @(ViewData["ActiveTab"]?.ToString() == "sedes" ? "active" : "")">
+               Sedes Recreativas y Apartamentos
+            </a>
+            @if (User.Identity!.IsAuthenticated)
+            {
+                <a asp-controller="Reservas" asp-action="Index"
+                   class="nav-tab @(ViewData["ActiveTab"]?.ToString() == "reservas" ? "active" : "")">
+                   Mis Reservas
+                </a>
+                <a asp-controller="Account" asp-action="Actualizar"
+                   class="nav-tab @(ViewData["ActiveTab"]?.ToString() == "actualizar" ? "active" : "")">
+                   Actualizar Datos
+                </a>
+                <form asp-controller="Account" asp-action="Logout" method="post" style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="nav-tab nav-tab-btn">Cerrar Sesi&#243;n</button>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login"
+                   class="nav-tab @(ViewData["ActiveTab"]?.ToString() == "login" ? "active" : "")">
+                   Ingreso y Registro
+                </a>
+            }
+        </div>
+        @if (User.Identity!.IsAuthenticated)
+        {
+            <div class="nav-user">
+                <span class="nav-user-icon">&#128100;</span>
+                <span>Bienvenido, @User.Identity.Name</span>
+            </div>
+        }
+    </nav>
+
+    <main>
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        FODUN - Fondo de Docentes Universidad Nacional - Derechos Reservados &copy; 2014 - Desarrollado por MarketingItSolutions S.A.S
+    </footer>
+</div>
+
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

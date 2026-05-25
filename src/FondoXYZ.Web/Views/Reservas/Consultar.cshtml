@@ -1,0 +1,95 @@
+@model FondoXYZ.Web.Models.ConsultaDisponibilidadViewModel
+@{ ViewData["Title"] = "Consultar disponibilidad"; }
+
+<h2>Consultar disponibilidad</h2>
+
+<form asp-action="Consultar" method="post" class="mb-4">
+  <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+  <div class="row g-3 align-items-end">
+
+    <div class="col-md-2">
+      <label asp-for="FechaInicio" class="form-label"></label>
+      <input asp-for="FechaInicio" type="date" class="form-control" />
+      <span asp-validation-for="FechaInicio" class="text-danger"></span>
+    </div>
+
+    <div class="col-md-2">
+      <label asp-for="FechaFin" class="form-label"></label>
+      <input asp-for="FechaFin" type="date" class="form-control" />
+      <span asp-validation-for="FechaFin" class="text-danger"></span>
+    </div>
+
+    <div class="col-md-2">
+      <label asp-for="NumeroPersonas" class="form-label"></label>
+      <input asp-for="NumeroPersonas" type="number" min="1" class="form-control" placeholder="Todas" />
+      <span asp-validation-for="NumeroPersonas" class="text-danger"></span>
+    </div>
+
+    <div class="col-md-3">
+      <label asp-for="SedeId" class="form-label"></label>
+      <select asp-for="SedeId" class="form-select">
+        <option value="">— Todas las sedes —</option>
+        @foreach (var s in Model.Sedes)
+        {
+          <option value="@s.Id">@s.NombreOficial</option>
+        }
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary w-100">Buscar</button>
+    </div>
+  </div>
+</form>
+
+@if (Model.Buscado)
+{
+  @if (!Model.Resultados.Any())
+  {
+    <div class="alert alert-warning">No hay alojamientos disponibles para los criterios seleccionados.</div>
+  }
+  else
+  {
+    <p class="text-muted">@Model.Resultados.Count() resultado(s) encontrado(s)</p>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>Sede</th>
+            <th>Ciudad</th>
+            <th>Alojamiento</th>
+            <th>Tipo</th>
+            <th>Habitaciones</th>
+            <th>Capacidad</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var r in Model.Resultados)
+          {
+            <tr>
+              <td>@r.Sede</td>
+              <td>@r.Ciudad</td>
+              <td>@r.Alojamiento</td>
+              <td><span class="badge bg-secondary">@r.TipoSede</span></td>
+              <td>@r.NumHabitaciones</td>
+              <td>@(r.CapacidadMaxima?.ToString() ?? "-")</td>
+              <td>
+                <a class="btn btn-sm btn-outline-primary"
+                   asp-action="Tarifas"
+                   asp-route-alojamientoId="@r.AlojamientoId"
+                   asp-route-fechaInicio="@Model.FechaInicio"
+                   asp-route-fechaFin="@Model.FechaFin"
+                   asp-route-numPersonas="@(Model.NumeroPersonas ?? 1)">
+                  Ver tarifas
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}
+
+@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

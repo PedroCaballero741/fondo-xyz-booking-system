@@ -1,0 +1,82 @@
+@model FondoXYZ.Web.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Ingreso";
+    ViewData["ActiveTab"] = "login";
+}
+<div class="page">
+    <div class="login-wrap">
+        <div class="login-hero">
+            <div class="login-hero-logo">
+                <svg viewBox="0 0 100 100" width="48" height="48">
+                    <path d="M22 22 L78 78 M78 22 L22 78" stroke="#A8202F" stroke-width="11" stroke-linecap="round"/>
+                </svg>
+                <div class="txt">FODUN<small>SEDES RECREATIVAS</small></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="login-card-title">Sistema de Reservas</div>
+            <p class="login-msg">Por favor ingrese su n&#250;mero de documento<br/>y su clave de 4 d&#237;gitos</p>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div style="color:#A8202F; margin-bottom:12px; font-size:12px;">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <div>@error.ErrorMessage</div>
+                    }
+                </div>
+            }
+
+            <form asp-action="Login" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ReturnUrl" value="@ViewBag.ReturnUrl" />
+
+                <div class="login-form">
+                    <label class="label">Documento:</label>
+                    <input asp-for="NumeroDocumento" class="input input-lg" autocomplete="off" />
+
+                    <label class="label">Clave:</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="pin-display" class="input input-sm" readonly placeholder="&#8226;&#8226;&#8226;&#8226;"
+                               style="letter-spacing:4px; max-width:80px;" />
+                        <input type="hidden" asp-for="Clave" id="Clave" />
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:24px; margin-top:18px; align-items:flex-start;">
+                    <div>
+                        <div id="keypad" class="keypad"></div>
+                        <div style="margin-top:8px; display:flex; gap:6px;">
+                            <button type="button" id="keypad-shuffle" class="btn btn-secondary btn-sm">Reorganizar</button>
+                            <button type="submit" class="btn btn-primary btn-sm">Ingresar</button>
+                        </div>
+                        <a asp-action="Register" style="display:block; margin-top:10px; font-size:12px; color:#A8202F;">&#191;Olvid&#243; su clave?</a>
+                    </div>
+                    <div class="contraste">
+                        <div class="contraste-label">Contraste</div>
+                        <div class="contraste-row">
+                            <button type="button"></button>
+                            <button type="button"></button>
+                            <button type="button"></button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <a asp-action="Register">
+                <div class="login-bottom">
+                    <div class="txt">
+                        <h3>&#191;Usuario Nuevo?</h3>
+                        <p>REG&#205;STRESE AQU&#205;</p>
+                    </div>
+                    <div class="mouse">&#128433;</div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/keypad.js"></script>
+}

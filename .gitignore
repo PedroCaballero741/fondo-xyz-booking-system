@@ -46,3 +46,6 @@ desktop.ini
 ## Logs
 *.log
 logs/
+
+## comprobantes de pago subidos por usuarios
+src/FondoXYZ.Web/wwwroot/uploads/
